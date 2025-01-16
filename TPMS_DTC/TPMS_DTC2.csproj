@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{802F921A-4081-4DC4-9097-8711360DCD5D}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TPMS_DTC</RootNamespace>
+    <AssemblyName>TPMS_DTC</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NationalInstruments.Analysis.Enterprise, Version=13.0.45.242, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.Common, Version=13.5.40.173, Culture=neutral, PublicKeyToken=dc6ad606294fc298, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.DAQmx, Version=14.2.45.30, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=x86">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="NationalInstruments.NetworkVariable, Version=13.0.45.242, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.NI4882, Version=13.0.45.159, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.Tdms, Version=13.0.45.242, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.UI, Version=13.0.45.242, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.UI.WindowsForms, Version=13.0.45.242, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.VisaNS, Version=13.0.45.167, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main.Designer.cs">
+      <DependentUpon>Main.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PCANBasic.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Write Data By Local Identifier\WriteECU.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteECU.Designer.cs">
+      <DependentUpon>WriteECU.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteHMC.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteHMC.Designer.cs">
+      <DependentUpon>WriteHMC.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteManufacture.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteManufacture.Designer.cs">
+      <DependentUpon>WriteManufacture.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteSensor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteSensor.Designer.cs">
+      <DependentUpon>WriteSensor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteVehicle.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteVehicle.Designer.cs">
+      <DependentUpon>WriteVehicle.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteVIN.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Write Data By Local Identifier\WriteVIN.Designer.cs">
+      <DependentUpon>WriteVIN.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Main.resx">
+      <DependentUpon>Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteECU.resx">
+      <DependentUpon>WriteECU.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteHMC.resx">
+      <DependentUpon>WriteHMC.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteManufacture.resx">
+      <DependentUpon>WriteManufacture.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteSensor.resx">
+      <DependentUpon>WriteSensor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteVehicle.resx">
+      <DependentUpon>WriteVehicle.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Write Data By Local Identifier\WriteVIN.resx">
+      <DependentUpon>WriteVIN.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
