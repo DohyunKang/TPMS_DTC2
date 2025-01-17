@@ -2111,7 +2111,7 @@ namespace TPMS_DTC
                 string logListDisplayPath = Path.Combine(folderPath, "LogListDisplay2.txt");
 
                 // LogListBox의 모든 항목을 파일에 저장
-                using (StreamWriter writer = new StreamWriter(logListDisplayPath, false))
+                using (StreamWriter writer = new StreamWriter(logListDisplayPath, true))
                 {
                     foreach (var item in LogListBox.Items)
                     {
