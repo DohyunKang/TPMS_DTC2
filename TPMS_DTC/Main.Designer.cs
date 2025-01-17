@@ -365,7 +365,7 @@
             this.tableLayoutPanel21.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 68.03653F));
             this.tableLayoutPanel21.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 31.96347F));
             this.tableLayoutPanel21.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 161F));
-            this.tableLayoutPanel21.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 128F));
+            this.tableLayoutPanel21.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 132F));
             this.tableLayoutPanel21.Controls.Add(this.dud_STmin_us, 0, 0);
             this.tableLayoutPanel21.Controls.Add(this.rBtn_ms, 0, 0);
             this.tableLayoutPanel21.Controls.Add(this.udStmin_ms, 0, 0);
@@ -387,7 +387,7 @@
             0,
             0,
             0});
-            this.dud_STmin_us.Location = new System.Drawing.Point(305, 3);
+            this.dud_STmin_us.Location = new System.Drawing.Point(301, 3);
             this.dud_STmin_us.Maximum = new decimal(new int[] {
             900,
             0,
@@ -403,7 +403,7 @@
             this.rBtn_ms.AutoSize = true;
             this.rBtn_ms.Checked = true;
             this.rBtn_ms.Font = new System.Drawing.Font("Consolas", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rBtn_ms.Location = new System.Drawing.Point(209, 3);
+            this.rBtn_ms.Location = new System.Drawing.Point(206, 3);
             this.rBtn_ms.Name = "rBtn_ms";
             this.rBtn_ms.Size = new System.Drawing.Size(48, 26);
             this.rBtn_ms.TabIndex = 47;
@@ -435,7 +435,7 @@
             // 
             this.rBtn_μs.AutoSize = true;
             this.rBtn_μs.Font = new System.Drawing.Font("Consolas", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.rBtn_μs.Location = new System.Drawing.Point(466, 3);
+            this.rBtn_μs.Location = new System.Drawing.Point(462, 3);
             this.rBtn_μs.Name = "rBtn_μs";
             this.rBtn_μs.Size = new System.Drawing.Size(48, 26);
             this.rBtn_μs.TabIndex = 50;
@@ -1081,10 +1081,10 @@
             // tableLayoutPanel24
             // 
             this.tableLayoutPanel24.ColumnCount = 4;
-            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 15.17761F));
-            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 84.82239F));
+            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.39164F));
+            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 83.60836F));
             this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 800F));
-            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 178F));
+            this.tableLayoutPanel24.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 182F));
             this.tableLayoutPanel24.Controls.Add(this.label9, 0, 0);
             this.tableLayoutPanel24.Controls.Add(this.LogResetButton, 3, 0);
             this.tableLayoutPanel24.Controls.Add(this.CountLav, 2, 0);
@@ -1105,7 +1105,7 @@
             this.label9.Font = new System.Drawing.Font("Consolas", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label9.Location = new System.Drawing.Point(3, 0);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(132, 44);
+            this.label9.Size = new System.Drawing.Size(142, 44);
             this.label9.TabIndex = 15;
             this.label9.Text = "ID = 593";
             // 
@@ -1114,7 +1114,7 @@
             this.LogResetButton.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.LogResetButton.Font = new System.Drawing.Font("Consolas", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.LogResetButton.Location = new System.Drawing.Point(1714, 3);
+            this.LogResetButton.Location = new System.Drawing.Point(1710, 3);
             this.LogResetButton.Name = "LogResetButton";
             this.LogResetButton.Size = new System.Drawing.Size(144, 38);
             this.LogResetButton.TabIndex = 14;
@@ -1128,7 +1128,7 @@
             this.CountLav.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.CountLav.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CountLav.Font = new System.Drawing.Font("Consolas", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.CountLav.Location = new System.Drawing.Point(914, 0);
+            this.CountLav.Location = new System.Drawing.Point(910, 0);
             this.CountLav.Name = "CountLav";
             this.CountLav.Size = new System.Drawing.Size(794, 44);
             this.CountLav.TabIndex = 1;
@@ -1140,9 +1140,9 @@
             this.CycleLav.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.CycleLav.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CycleLav.Font = new System.Drawing.Font("Consolas", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.CycleLav.Location = new System.Drawing.Point(141, 0);
+            this.CycleLav.Location = new System.Drawing.Point(151, 0);
             this.CycleLav.Name = "CycleLav";
-            this.CycleLav.Size = new System.Drawing.Size(767, 44);
+            this.CycleLav.Size = new System.Drawing.Size(753, 44);
             this.CycleLav.TabIndex = 0;
             this.CycleLav.Text = "Cycle(ms) :";
             // 

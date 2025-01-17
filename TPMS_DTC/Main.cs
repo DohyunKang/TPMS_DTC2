@@ -39,16 +39,12 @@ namespace TPMS_DTC
     {
         // FlowControl 데이터 기본값
         private byte[] flowControlData = { 0x30, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00 };
-        // FlowControl 수신 여부
-        //private bool flowControlReceived = false;
 
         // PCAN Handle (채널 1, 채널 2)
         private TPCANHandle m_PcanHandleCH1 = PCANBasic.PCAN_USBBUS1;
-        private TPCANHandle m_PcanHandleCH2 = PCANBasic.PCAN_USBBUS2;
 
         // 채널 연결 여부 표시
         private bool ch1Connected = false;
-        private bool ch2Connected = false;
 
         // ========= [ 로그 관리 ] =========
         private Queue<LogEntry> logQueue = new Queue<LogEntry>(); // RX, TX 로그를 담을 큐
@@ -60,10 +56,10 @@ namespace TPMS_DTC
         private System.Windows.Forms.Timer saveLogTimer;
 
         // 로그 파일 저장 경로/파일명
-        private string folderPath = @"C:\Users\kangdohyun\Desktop\세미나\강도현\8주차\LOG";
-        private string txLogFile = "TxLog.txt";
-        private string rxLogFile = "RxLog.txt";
-        private string allLogFile = "AllLog.txt";
+        private string folderPath = @"C:\Users\kangdohyun\Desktop\세미나\강도현\9주차(8주차 보강)\LOG";
+        private string txLogFile = "TxLog2.txt";
+        private string rxLogFile = "RxLog2.txt";
+        private string allLogFile = "AllLog2.txt";
 
         // 수신 메시지를 처리하기 위한 변수 선언
         private List<byte> receivedData = new List<byte>();
@@ -76,9 +72,6 @@ namespace TPMS_DTC
         // 이전 시간과 현재 시간 기록을 위한 변수
         private double previousTimestamp = 0.0; // 이전 타임스탬프
         private int count = 0; // Count 값
-
-        //MultiFrame의 데이터 파싱
-        //private string parsedData; 
 
         public TPMS()
         {
@@ -111,7 +104,7 @@ namespace TPMS_DTC
                     CH1_Button.BackColor = Color.Green;
                     MessageBox.Show("Channel 1 Connected!");
 
-                    // 수신 타이머 시작 (CH1, CH2 중 하나라도 연결 시)
+                    // 수신 타이머 시작 (CH1 연결 시)
                     StartTimersIfNeeded();
                 }
                 else
@@ -139,21 +132,21 @@ namespace TPMS_DTC
         //======================================================================
         private void StartTimersIfNeeded()
         {
-            // 하나라도 연결되어 있으면
-            if (ch1Connected || ch2Connected)
+            // 연결되어 있으면
+            if (ch1Connected)
             {
                 // 수신 타이머 (System.Threading.Timer)
                 if (canReadTimer == null)
                 {
-                    // 500ms 간격으로 Read
-                    canReadTimer = new System.Threading.Timer(CanReadTimer_Tick, null, 0, 500);
+                    // 10ms 간격으로 Read
+                    canReadTimer = new System.Threading.Timer(CanReadTimer_Tick, null, 0, 10);
                 }
 
                 // 로그 저장 타이머 (WinForms Timer)
                 if (saveLogTimer == null)
                 {
                     saveLogTimer = new System.Windows.Forms.Timer();
-                    saveLogTimer.Interval = 500; // 500ms
+                    saveLogTimer.Interval = 10; // 10ms
                     saveLogTimer.Tick += SaveLogTimer_Tick;
                     saveLogTimer.Start();
                 }
@@ -162,8 +155,7 @@ namespace TPMS_DTC
 
         private void StopTimersIfNoConnection()
         {
-            // 둘 다 false 면
-            if (!ch1Connected && !ch2Connected)
+            if (!ch1Connected)
             {
                 // 수신 타이머 정지
                 if (canReadTimer != null)
@@ -191,12 +183,6 @@ namespace TPMS_DTC
                 PCANBasic.Uninitialize(m_PcanHandleCH1);
                 ch1Connected = false;
             }
-            // ch2Connected = true 상태면 해제
-            if (ch2Connected)
-            {
-                PCANBasic.Uninitialize(m_PcanHandleCH2);
-                ch2Connected = false;
-            }
 
             // 타이머들 정리
             if (canReadTimer != null)
@@ -212,12 +198,14 @@ namespace TPMS_DTC
         }
 
         //===========================================================================
-        //   수신 타이머 콜백 (CH1/CH2 모두 Read 시도) + 수신 메시지 에러 처리 + FC 송신
+        //   수신 타이머 콜백 (CH1 모두 Read 시도) + 수신 메시지 에러 처리 + FC 송신
         //===========================================================================
         private void CanReadTimer_Tick(object state)
         {
             if (ch1Connected)
+            {
                 ReadFromChannel(m_PcanHandleCH1);
+            }
         }
 
         private void ReadFromChannel(TPCANHandle handle)
@@ -256,7 +244,7 @@ namespace TPMS_DTC
                     // Flow Control 자동 전송
                     SendFlowControl(handle);
                 }
-                else if (message.DATA[0] >= 0x21 && message.DATA[0] < 0x30 ) // Consecutive Frame (CF)
+                else if (message.DATA[0] >= 0x21 && message.DATA[0] < 0x30) // Consecutive Frame (CF)
                 {
                     int sequenceNumber = message.DATA[0] & 0x0F;
                     receivedData.AddRange(message.DATA.Skip(1));
@@ -330,6 +318,28 @@ namespace TPMS_DTC
                     UpdateDisplay(responseLog);
                 }
 
+                if (canIdHex == "593")
+                {
+                    description = "There is no Tx";
+                    ProcessTimestamp(timestamp);
+                }
+
+                LogEntry rxEntry = new LogEntry(
+                    "RX",
+                    now,
+                    canIdHex,
+                    message.LEN,
+                    dataHex
+                );
+
+                // 큐에 저장
+                lock (logQueue)
+                {
+                    logQueue.Enqueue(rxEntry);
+                }
+
+                //UpdateDisplay(rxEntry);
+
                 // Rx 데이터 파싱 호출
                 ProcessRxData(message, description);
             }
@@ -401,11 +411,11 @@ namespace TPMS_DTC
             Brush textBrush = Brushes.Black;
 
             // 텍스트 색상 변경
-            if(itemText.Contains("Error"))
+            if (itemText.Contains("Error"))
             {
                 textBrush = Brushes.Red;
             }
-            else if(itemText.StartsWith("Read Info"))
+            else if (itemText.StartsWith("Read Info"))
             {
                 textBrush = Brushes.Blue;
             }
@@ -697,9 +707,6 @@ namespace TPMS_DTC
             {
                 LogListBox.Items.RemoveAt(0); // 가장 오래된 항목 제거
             }
-
-            // 마지막 항목으로 스크롤
-            LogListBox.TopIndex = LogListBox.Items.Count - 1;
         }
 
         //===============================================================================================
@@ -718,7 +725,7 @@ namespace TPMS_DTC
                 //////////////////////////////////////
 
                 case "nodeStandard":
-                    
+
                     GetDescriptionForCommand(selectedNode.Name);
                     break;
 
@@ -808,7 +815,7 @@ namespace TPMS_DTC
                 ////////////////////////////////////
 
                 case "nodeECUProgrammingMode":
-                    
+
                     GetDescriptionForCommand(selectedNode.Name);
 
                     break;
@@ -1028,7 +1035,7 @@ namespace TPMS_DTC
                 //////////////////////////////////////
 
                 case "nodeExtended":
-                    
+
                     GetDescriptionForCommand(selectedNode.Name);
 
                     break;
@@ -1180,6 +1187,7 @@ namespace TPMS_DTC
 
                 // FF 방식으로 메시지 전송
                 SendFirstFrame(command, description);
+                // FC 수신 대기
 
                 // CF 방식으로 메시지 전송
                 SendConsecutiveFrames(command, description);
@@ -1334,6 +1342,8 @@ namespace TPMS_DTC
             canMessage.LEN = (byte)message.Length;
             canMessage.DATA = message;
 
+            string canIdHex = canId.ToString("X3");
+
             // CAN 메시지 전송
             TPCANStatus status = PCANBasic.Write(m_PcanHandleCH1, ref canMessage);
 
@@ -1349,8 +1359,22 @@ namespace TPMS_DTC
                 // LogListBox에 추가
                 UpdateDisplay(logEntry);
 
+                LogEntry txEntry = new LogEntry(
+                    "TX",
+                    now,
+                    canIdHex,
+                    8,
+                    dataHex
+                );
+
+                // 큐에 넣기
+                lock (logQueue)
+                {
+                    logQueue.Enqueue(txEntry);
+                }
+
                 // TxLog.txt에 기록
-                SaveTxLog(logEntry);
+                //SaveTxLog(logEntry);
             }
             else
             {
@@ -1376,6 +1400,7 @@ namespace TPMS_DTC
         private bool WaitForFlowControl()
         {
             bool flowControlReceived = false;
+
             DateTime startTime = DateTime.Now;
 
             while (!flowControlReceived)
@@ -1390,12 +1415,29 @@ namespace TPMS_DTC
                 if (status == TPCANStatus.PCAN_ERROR_OK && message.ID == 0x7DE)
                 {
                     // 수신된 데이터 로그 출력
-                    string log = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | ",
+                    /*string log = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | ",
                         DateTime.Now,
                         message.ID,
                         string.Join(" ", message.DATA.Select(b => b.ToString("X2")))
-                        );
-                    UpdateDisplay(log);
+                        );*/
+                  
+                    DateTime now = DateTime.Now;
+                    string canId = message.ID.ToString("X3");
+                    string dataHex = String.Join(" ", message.DATA.Select(b => b.ToString("X2")).ToArray());
+
+                    LogEntry flowcontrol = new LogEntry("RX",
+                    now,
+                    canId,
+                    8,
+                    dataHex);
+
+                    // 큐에 저장
+                    lock (logQueue)
+                    {
+                        logQueue.Enqueue(flowcontrol);
+                    }
+
+                    UpdateDisplay(flowcontrol);
 
                     // Flow Control 메시지 확인
                     if (message.DATA[0] == 0x30) // Flow Control 메시지
@@ -1405,15 +1447,16 @@ namespace TPMS_DTC
                     }
                 }
 
-                // 타임아웃 확인 (예: 500ms)
+                // 타임아웃 확인 및 Flow Control 재요청
                 if ((DateTime.Now - startTime).TotalMilliseconds > 500)
                 {
                     UpdateDisplay("Error: Flow Control 메시지를 기다리는 중 타임아웃 발생.");
-                    return false; // 강제 종료
+
+                   return false; // 강제 종료
                 }
             }
 
-            return true;
+            return flowControlReceived;
         }
 
         /* ECU 측 flowcontrol 제어 불가로 주석처리
@@ -1443,30 +1486,47 @@ namespace TPMS_DTC
         //   TX(Read)일떄 RX 데이터 파싱 관련 메서드
         //===============================================================================================
 
+        // Active Fault 파싱 메서드
         private string ParseActiveFault(List<byte> data)
         {
-            if (data.Count < 3) return "Invalid Data";
-
             string parsedInfo = "";
-            int numberOfDTCs = data[2]; // DTC 개수
+            int requiredLength = 8; // 최소 데이터 길이
 
+            // 데이터 길이 확인
+            if (data.Count < requiredLength)
+            {
+                return ", Invalid Data: Insufficient Length";
+            }
+
+            // DTC 개수 확인 (data[2]가 index임)
+            int numberOfDTCs = data[2]; // Index는 DTC 개수를 나타냄
             parsedInfo += "Number of Active DTCs: " + numberOfDTCs;
+
+            if (numberOfDTCs == 0)
+            {
+                parsedInfo += ", There are no DTCs";
+            }
 
             for (int i = 0; i < numberOfDTCs; i++)
             {
-                int offset = 2 + i * 3; // 각 DTC는 3 바이트씩 차지
-                if (offset + 2 >= data.Count) break;
+                int offset = 3 + i * 6; // 각 DTC는 6 바이트씩 차지
 
-                // DTC 정보 파싱
-                string dtcCode = string.Concat(data[offset].ToString("X2"), data[offset + 1].ToString("X2"));
-                byte status = data[offset + 2];
+                // 패딩 처리: 필요한 바이트가 부족하면 0으로 채움
+                List<byte> paddedData = new List<byte>(data);
+                while (paddedData.Count < offset + 6)
+                {
+                    paddedData.Add(0);
+                }
 
-                // Status 비트 해석
+                // DTC 정보
+                string dtcCode = string.Concat(paddedData[offset].ToString("X2"), paddedData[offset + 1].ToString("X2"));
+
+                // Status Byte 해석
+                byte status = paddedData[offset + 2];
                 string faultSymptom = (status & 0x0F) == 0 ? "No Fault Symptom" : "Fault Symptom Present";
                 string readinessFlag = ((status & 0x10) >> 4) == 0 ? "Test Complete" : "Test Not Complete";
 
-                // StorageState 해석을 위한 switch 문
-                string storageState = "";
+                string storageState;
                 switch ((status & 0x60) >> 5)
                 {
                     case 0:
@@ -1488,39 +1548,61 @@ namespace TPMS_DTC
 
                 string warningLamp = ((status & 0x80) >> 7) == 0 ? "MIL Off" : "MIL On";
 
+                // 활성화 횟수와 마지막 점화 카운트
+                int activeCount = paddedData[offset + 3];
+                int lastIgnitionCount = BitConverter.ToInt16(paddedData.ToArray(), offset + 4);
+
                 // 결과 추가
                 parsedInfo += ", DTC: " + dtcCode + ", FaultSymptom: " + faultSymptom
                     + ", ReadinessFlag: " + readinessFlag + ", StorageState: " + storageState
-                    + ", WarningLamp: " + warningLamp + "\n";
+                    + ", WarningLamp: " + warningLamp + ", ActiveCount: " + activeCount
+                    + ", LastIgnitionCount: " + lastIgnitionCount;
             }
 
             return parsedInfo;
         }
 
+        // Historic Fault 파싱 메서드
         private string ParseHistoricFault(List<byte> data)
         {
-            if (data.Count < 3) return "Invalid Data";
-
             string parsedInfo = "";
-            int numberOfDTCs = data[2]; // DTC 개수
+            int requiredLength = 8; // 최소 데이터 길이
 
+            // 데이터 길이 확인
+            if (data.Count < requiredLength)
+            {
+                return ", Invalid Data: Insufficient Length";
+            }
+
+            // DTC 개수 확인 (data[2]가 index임)
+            int numberOfDTCs = data[2]; // Index는 DTC 개수를 나타냄
             parsedInfo += "Number of Historic DTCs: " + numberOfDTCs;
+
+            if (numberOfDTCs == 0)
+            {
+                parsedInfo += ", There are no DTCs";
+            }
 
             for (int i = 0; i < numberOfDTCs; i++)
             {
-                int offset = 2 + i * 3; // 각 DTC는 3 바이트씩 차지
-                if (offset + 2 >= data.Count) break;
+                int offset = 3 + i * 6; // 각 DTC는 6 바이트씩 차지
 
-                // DTC 정보 파싱
-                string dtcCode = string.Concat(data[offset].ToString("X2"), data[offset + 1].ToString("X2"));
-                byte status = data[offset + 2];
+                // 패딩 처리: 필요한 바이트가 부족하면 0으로 채움
+                List<byte> paddedData = new List<byte>(data);
+                while (paddedData.Count < offset + 6)
+                {
+                    paddedData.Add(0);
+                }
 
-                // Status 비트 해석
+                // DTC 정보
+                string dtcCode = string.Concat(paddedData[offset].ToString("X2"), paddedData[offset + 1].ToString("X2"));
+
+                // Status Byte 해석
+                byte status = paddedData[offset + 2];
                 string faultSymptom = (status & 0x0F) == 0 ? "No Fault Symptom" : "Fault Symptom Present";
                 string readinessFlag = ((status & 0x10) >> 4) == 0 ? "Test Complete" : "Test Not Complete";
 
-                // StorageState 해석을 위한 switch 문
-                string storageState = "";
+                string storageState;
                 switch ((status & 0x60) >> 5)
                 {
                     case 0:
@@ -1542,10 +1624,15 @@ namespace TPMS_DTC
 
                 string warningLamp = ((status & 0x80) >> 7) == 0 ? "MIL Off" : "MIL On";
 
+                // 활성화 횟수와 마지막 점화 카운트
+                int activeCount = paddedData[offset + 3];
+                int lastIgnitionCount = BitConverter.ToInt16(paddedData.ToArray(), offset + 4);
+
                 // 결과 추가
                 parsedInfo += ", DTC: " + dtcCode + ", FaultSymptom: " + faultSymptom
                     + ", ReadinessFlag: " + readinessFlag + ", StorageState: " + storageState
-                    + ", WarningLamp: " + warningLamp + "\n";
+                    + ", WarningLamp: " + warningLamp + ", ActiveCount: " + activeCount
+                    + ", LastIgnitionCount: " + lastIgnitionCount;
             }
 
             return parsedInfo;
@@ -1832,7 +1919,7 @@ namespace TPMS_DTC
         //   LogList 업데이트 관련 메서드
         //===============================================================================================
 
-        private void UpdateDisplay(string logEntry)
+        /*private void UpdateDisplay(string logEntry)
         {
             if (LogListBox.InvokeRequired)
             {
@@ -1868,6 +1955,25 @@ namespace TPMS_DTC
 
                 // 마지막 항목으로 스크롤
                 LogListBox.TopIndex = LogListBox.Items.Count - 1;
+            }
+        }*/
+
+        private void UpdateDisplay(string logEntry)
+        {
+            // UI 스레드에서 실행되지 않는 경우 Invoke를 통해 UI 스레드에서 실행
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new MethodInvoker(() => UpdateDisplay(logEntry)));
+                return;
+            }
+
+            // UI 스레드에서 실행: LogListBox에 항목 추가
+            LogListBox.Items.Add(logEntry);
+
+            // 항목 수 제한 (예: 100개)
+            if (LogListBox.Items.Count > 100)
+            {
+                LogListBox.Items.RemoveAt(0); // 가장 오래된 항목 제거
             }
         }
 
@@ -2002,7 +2108,7 @@ namespace TPMS_DTC
             try
             {
                 // 저장 파일 경로
-                string logListDisplayPath = Path.Combine(folderPath, "LogListDisplay.txt");
+                string logListDisplayPath = Path.Combine(folderPath, "LogListDisplay2.txt");
 
                 // LogListBox의 모든 항목을 파일에 저장
                 using (StreamWriter writer = new StreamWriter(logListDisplayPath, false))
@@ -2049,7 +2155,7 @@ namespace TPMS_DTC
                 // 예) 2023-10-12 14:08:32.123 | TX | Standard | ID=7B7 | Len=8 | Data=00 11 22 33 44 55 66 77
                 return string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | {1} | ID={2} | Data={3} | ",
                     Timestamp, Direction, CanIdHex, DataHex);
-            }   
+            }
         }
     }
 }
