@@ -40,6 +40,9 @@ namespace TPMS_DTC
         // FlowControl 데이터 기본값
         private byte[] flowControlData = { 0x30, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
+        // Multiframe CF 전송 여부
+        private bool MultiframeTxStatus = true;
+
         // PCAN Handle (채널 1, 채널 2)
         private TPCANHandle m_PcanHandleCH1 = PCANBasic.PCAN_USBBUS1;
 
@@ -297,6 +300,9 @@ namespace TPMS_DTC
                             break;
                         case 0x78:
                             description = "Error: requestCorrectlyReceived-ResponsePending";
+                            break;
+                        case 0x80:
+                            description = "Error : missMatchDiagnosticModeBetweenSelectedCommand";
                             break;
                         default:
                             description = "Error: Unknown Error Code";
@@ -1332,6 +1338,12 @@ namespace TPMS_DTC
                 //Thread.Sleep(stmin);
             }
 
+            if (!MultiframeTxStatus)
+            {
+                // 로그 기록
+                string errorLog = string.Format("| Error : Unable to send multi-frame CF |");
+                UpdateDisplay(errorLog);
+            }
         }
 
         private void SendCanMessage(uint canId, string type, byte[] message, string description)
@@ -1401,6 +1413,8 @@ namespace TPMS_DTC
         {
             bool flowControlReceived = false;
 
+            string description;
+
             DateTime startTime = DateTime.Now;
 
             while (!flowControlReceived)
@@ -1420,7 +1434,7 @@ namespace TPMS_DTC
                         message.ID,
                         string.Join(" ", message.DATA.Select(b => b.ToString("X2")))
                         );*/
-                  
+
                     DateTime now = DateTime.Now;
                     string canId = message.ID.ToString("X3");
                     string dataHex = String.Join(" ", message.DATA.Select(b => b.ToString("X2")).ToArray());
@@ -1445,6 +1459,46 @@ namespace TPMS_DTC
                         flowControlReceived = true;
                         break;
                     }
+                    else if (message.DATA[1] == 0x7F)
+                    {
+                        // 특정 에러 메시지 처리
+                        switch (message.DATA[3])
+                        {
+                            case 0x11:
+                                description = "Error: ServiceNotSupported";
+                                break;
+                            case 0x12:
+                                description = "Error: SubFunctionNotSupport-invalidFormat";
+                                break;
+                            case 0x13:
+                                description = "Error: IncorrectMessageLengthOrInvalidFormat";
+                                break;
+                            case 0x21:
+                                description = "Error: Busy – repeatRequest";
+                                break;
+                            case 0x22:
+                                description = "Error: conditionsNotCorrect / requenstSequenceError";
+                                break;
+                            case 0x78:
+                                description = "Error: requestCorrectlyReceived-ResponsePending";
+                                break;
+                            case 0x80:
+                                description = "Error : missMatchDiagnosticModeBetweenSelectedCommand";
+                                break;
+                            default:
+                                description = "Error: Unknown Error Code";
+                                break;
+                        }
+
+                        // 로그 기록
+                        string errorLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | {3} |",
+                            now, message.ID, dataHex, description);
+                        UpdateDisplay(errorLog);
+
+                        MultiframeTxStatus = false;
+
+                        return false; // 강제 종료
+                    }
                 }
 
                 // 타임아웃 확인 및 Flow Control 재요청
@@ -1452,9 +1506,13 @@ namespace TPMS_DTC
                 {
                     UpdateDisplay("Error: Flow Control 메시지를 기다리는 중 타임아웃 발생.");
 
-                   return false; // 강제 종료
+                    MultiframeTxStatus = false;
+
+                    return false; // 강제 종료
                 }
             }
+
+            MultiframeTxStatus = true;
 
             return flowControlReceived;
         }
@@ -1878,7 +1936,7 @@ namespace TPMS_DTC
                     }
                 }
             }
-            else if (message.DATA[1] == 0x7F)
+            /*else if (message.DATA[1] == 0x7F)
             {
                 // 특정 에러 메시지 처리
                 switch (message.DATA[3])
@@ -1907,12 +1965,16 @@ namespace TPMS_DTC
                         description = "Error: requestCorrectlyReceived-ResponsePending";
                         LogAdditionalDescription(description);
                         break;
+                    case 0x80:
+                        description = "Error : missMatchDiagnosticModeBetweenSelectedCommand";
+                        LogAdditionalDescription(description);
+                        break;
                     default:
                         description = "Error: Unknown Error Code";
                         LogAdditionalDescription(description);
                         break;
                 }
-            }
+            }*/
         }
 
         //===============================================================================================
