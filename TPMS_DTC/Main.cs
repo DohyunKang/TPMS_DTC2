@@ -1297,53 +1297,56 @@ namespace TPMS_DTC
 
             int currentBlockCount = 0;*/
 
-            while (sentBytes < totalLength)
+            if(MultiframeTxStatus)
             {
-                byte[] consecutiveFrame = new byte[8];
-                consecutiveFrame[0] = (byte)((0x20) | (sequenceNumber & 0x0F)); // CF Header: N_PCI (4-bit 타입 + 4-bit 시퀀스 번호)
-
-                int remainingBytes = totalLength - sentBytes;
-                int bytesToSend = Math.Min(remainingBytes, 7);
-
-                Array.Copy(command, sentBytes, consecutiveFrame, 1, bytesToSend);
-                sentBytes += bytesToSend;
-
-                // CAN 메시지로 전송
-                SendCanMessage(0x7D6, type, consecutiveFrame, String.Format("Consecutive Frame {0} : {1}", sequenceNumber, description));
-
-                // 시퀀스 번호 증가
-                sequenceNumber = (sequenceNumber + 1) % 16;
-
-                /* ECU 측 flowcontrol 제어 불가로 주석처리
-                // Block Size 체크
-                currentBlockCount++;
-                if (currentBlockCount >= blockSize || sentBytes >= totalLength)
+                while (sentBytes < totalLength)
                 {
-                    // Block Size에 도달하거나 모든 데이터를 전송한 경우
-                    if (sentBytes < totalLength)
+                    byte[] consecutiveFrame = new byte[8];
+                    consecutiveFrame[0] = (byte)((0x20) | (sequenceNumber & 0x0F)); // CF Header: N_PCI (4-bit 타입 + 4-bit 시퀀스 번호)
+
+                    int remainingBytes = totalLength - sentBytes;
+                    int bytesToSend = Math.Min(remainingBytes, 7);
+
+                    Array.Copy(command, sentBytes, consecutiveFrame, 1, bytesToSend);
+                    sentBytes += bytesToSend;
+
+                    // CAN 메시지로 전송
+                    SendCanMessage(0x7D6, type, consecutiveFrame, String.Format("Consecutive Frame {0} : {1}", sequenceNumber, description));
+
+                    // 시퀀스 번호 증가
+                    sequenceNumber = (sequenceNumber + 1) % 16;
+
+                    /* ECU 측 flowcontrol 제어 불가로 주석처리
+                    // Block Size 체크
+                    currentBlockCount++;
+                    if (currentBlockCount >= blockSize || sentBytes >= totalLength)
                     {
-                        // 추가 데이터가 남아있는 경우 Flow Control 대기
-                        if (!WaitForFlowControl())
+                        // Block Size에 도달하거나 모든 데이터를 전송한 경우
+                        if (sentBytes < totalLength)
                         {
-                            Debug.WriteLine("Flow Control 메시지 수신 실패로 전송 중단.");
-                            return; // FC 수신 실패 시 전송 중단
+                            // 추가 데이터가 남아있는 경우 Flow Control 대기
+                            if (!WaitForFlowControl())
+                            {
+                                Debug.WriteLine("Flow Control 메시지 수신 실패로 전송 중단.");
+                                return; // FC 수신 실패 시 전송 중단
+                            }
                         }
-                    }
 
-                    // 블록 카운트 초기화
-                    currentBlockCount = 0;
-                }*/
+                        // 블록 카운트 초기화
+                        currentBlockCount = 0;
+                    }*/
 
-                // STmin 대기 시간 적용 <- ECU 측 flowcontrol 제어 불가로 주석처리
-                //Thread.Sleep(stmin);
+                    // STmin 대기 시간 적용 <- ECU 측 flowcontrol 제어 불가로 주석처리
+                    //Thread.Sleep(stmin);
+                }
             }
 
-            if (!MultiframeTxStatus)
+            /*if (!MultiframeTxStatus)
             {
                 // 로그 기록
                 string errorLog = string.Format("| Error : Unable to send multi-frame CF |");
                 UpdateDisplay(errorLog);
-            }
+            }*/
         }
 
         private void SendCanMessage(uint canId, string type, byte[] message, string description)
