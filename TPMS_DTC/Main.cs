@@ -213,7 +213,11 @@ namespace TPMS_DTC
 
         private void ReadFromChannel(TPCANHandle handle)
         {
-            while (true)
+            // 한 번 콜백 돌 때 최대 100개만 처리 (필요에 따라 조정)
+            int maxReadPerTick = 100;
+            int readCount = 0;
+
+            while (readCount < maxReadPerTick)
             {
                 TPCANMsg message;
                 TPCANTimestamp timestamp;
@@ -224,6 +228,8 @@ namespace TPMS_DTC
                     // 더 이상 읽을 메시지가 없거나 에러 시 break
                     break;
                 }
+
+                readCount++;
 
                 // 수신 메시지
                 DateTime now = DateTime.Now;
@@ -258,17 +264,6 @@ namespace TPMS_DTC
                     string cfLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | ",
                         now, message.ID, dataHex);
                     UpdateDisplay(cfLog);
-
-                    if (receivedData.Count >= expectedDataLength)
-                    {
-                        receivedData.Clear();
-                        expectedDataLength = 0;
-
-                        string completeLog = string.Format("< Complete MultiFrame : {0} >",
-                            data_description);
-                        UpdateDisplay(completeLog);
-                    }
-
                 }
                 else if (message.DATA[0] == 0x30) // Flow Control 메시지 수신
                 {
@@ -281,38 +276,41 @@ namespace TPMS_DTC
                 }
                 else if (canIdHex == "7DE" && message.LEN > 1 && message.DATA[1] == 0x7F) // 에러 코드 식별
                 {
+                    // 특정 에러 메시지 처리
                     switch (message.DATA[3])
                     {
                         case 0x11:
-                            description = "Error: ServiceNotSupported";
+                            description = "ServiceNotSupported";
                             break;
                         case 0x12:
-                            description = "Error: SubFunctionNotSupport-invalidFormat";
+                            description = "SubFunctionNotSupport-invalidFormat";
                             break;
                         case 0x13:
-                            description = "Error: IncorrectMessageLengthOrInvalidFormat";
+                            description = "IncorrectMessageLengthOrInvalidFormat";
                             break;
                         case 0x21:
-                            description = "Error: Busy – repeatRequest";
+                            description = "Busy – repeatRequest";
                             break;
                         case 0x22:
-                            description = "Error: conditionsNotCorrect / requenstSequenceError";
+                            description = "conditionsNotCorrect / requenstSequenceError";
                             break;
                         case 0x78:
-                            description = "Error: requestCorrectlyReceived-ResponsePending";
+                            description = "requestCorrectlyReceived-ResponsePending";
                             break;
                         case 0x80:
-                            description = "Error : missMatchDiagnosticModeBetweenSelectedCommand";
+                            description = "missMatchDiagnosticModeBetweenSelectedCommand";
                             break;
                         default:
-                            description = "Error: Unknown Error Code";
+                            description = "Unknown Error Code";
                             break;
                     }
 
                     // 로그 기록
-                    string errorLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | {3} |",
-                        now, message.ID, dataHex, description);
-                    UpdateDisplay(errorLog);
+                    //string errorLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | {3} |", now, message.ID, dataHex, description);
+                    //UpdateDisplay(errorLog);
+
+                    string errorLog = string.Format("{0} |", description);
+                    LogAdditionalDescription4(errorLog);
                 }
                 else if (canIdHex == "7DE")
                 {
@@ -322,6 +320,12 @@ namespace TPMS_DTC
                     string responseLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | ",
                         now, message.ID, dataHex);
                     UpdateDisplay(responseLog);
+                }
+
+                if (message.DATA[1] == 0x7B)
+                {
+                    string responseLog = string.Format("Receive from TX ");
+                    LogAdditionalDescription2(responseLog);
                 }
 
                 if (canIdHex == "593")
@@ -344,10 +348,13 @@ namespace TPMS_DTC
                     logQueue.Enqueue(rxEntry);
                 }
 
-                //UpdateDisplay(rxEntry);
-
                 // Rx 데이터 파싱 호출
                 ProcessRxData(message, description);
+
+                if (canIdHex != "593")
+                {
+                    LogAdditionalDescription5("");
+                }
             }
         }
 
@@ -417,9 +424,14 @@ namespace TPMS_DTC
             Brush textBrush = Brushes.Black;
 
             // 텍스트 색상 변경
+
             if (itemText.Contains("Error"))
             {
                 textBrush = Brushes.Red;
+            }
+            else if (itemText.StartsWith("Success"))
+            {
+                textBrush = Brushes.Green;
             }
             else if (itemText.StartsWith("Read Info"))
             {
@@ -517,6 +529,7 @@ namespace TPMS_DTC
                     string dataHex = string.Join(" ", canData.Select(b => string.Format("{0:X2}", b)));
                     string logMessage = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | TX | ID={1:X3} | Data={2} | ", now, canMessage.ID, dataHex);
                     LogListBox.Items.Add(logMessage); // 로그 리스트박스에 추가
+                    LogScrollDown();
                 }
                 else
                 {
@@ -1316,6 +1329,13 @@ namespace TPMS_DTC
                     // 시퀀스 번호 증가
                     sequenceNumber = (sequenceNumber + 1) % 16;
 
+                    if(sentBytes == totalLength)
+                    {
+                        // 로그 기록
+                        string successLog = string.Format("Send Multiframe ");
+                        LogAdditionalDescription2(successLog);
+                    }
+
                     /* ECU 측 flowcontrol 제어 불가로 주석처리
                     // Block Size 체크
                     currentBlockCount++;
@@ -1340,13 +1360,6 @@ namespace TPMS_DTC
                     //Thread.Sleep(stmin);
                 }
             }
-
-            /*if (!MultiframeTxStatus)
-            {
-                // 로그 기록
-                string errorLog = string.Format("| Error : Unable to send multi-frame CF |");
-                UpdateDisplay(errorLog);
-            }*/
         }
 
         private void SendCanMessage(uint canId, string type, byte[] message, string description)
@@ -1373,7 +1386,8 @@ namespace TPMS_DTC
 
                 // LogListBox에 추가
                 UpdateDisplay(logEntry);
-
+                //LogScrollDown();
+                
                 LogEntry txEntry = new LogEntry(
                     "TX",
                     now,
@@ -1387,9 +1401,6 @@ namespace TPMS_DTC
                 {
                     logQueue.Enqueue(txEntry);
                 }
-
-                // TxLog.txt에 기록
-                //SaveTxLog(logEntry);
             }
             else
             {
@@ -1468,35 +1479,37 @@ namespace TPMS_DTC
                         switch (message.DATA[3])
                         {
                             case 0x11:
-                                description = "Error: ServiceNotSupported";
+                                description = "ServiceNotSupported";
                                 break;
                             case 0x12:
-                                description = "Error: SubFunctionNotSupport-invalidFormat";
+                                description = "SubFunctionNotSupport-invalidFormat";
                                 break;
                             case 0x13:
-                                description = "Error: IncorrectMessageLengthOrInvalidFormat";
+                                description = "IncorrectMessageLengthOrInvalidFormat";
                                 break;
                             case 0x21:
-                                description = "Error: Busy – repeatRequest";
+                                description = "Busy – repeatRequest";
                                 break;
                             case 0x22:
-                                description = "Error: conditionsNotCorrect / requenstSequenceError";
+                                description = "conditionsNotCorrect / requenstSequenceError";
                                 break;
                             case 0x78:
-                                description = "Error: requestCorrectlyReceived-ResponsePending";
+                                description = "requestCorrectlyReceived-ResponsePending";
                                 break;
                             case 0x80:
-                                description = "Error : missMatchDiagnosticModeBetweenSelectedCommand";
+                                description = "missMatchDiagnosticModeBetweenSelectedCommand";
                                 break;
                             default:
-                                description = "Error: Unknown Error Code";
+                                description = "Unknown Error Code";
                                 break;
                         }
 
                         // 로그 기록
-                        string errorLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | {3} |",
-                            now, message.ID, dataHex, description);
-                        UpdateDisplay(errorLog);
+                        //string errorLog = string.Format("| {0:yyyy-MM-dd HH:mm:ss.fff} | RX | ID={1:X3} | Data={2} | {3} |", now, message.ID, dataHex, description);
+                        //UpdateDisplay(errorLog);
+
+                        string errorLog = string.Format("{0} |",description);
+                        LogAdditionalDescription4(errorLog);
 
                         MultiframeTxStatus = false;
 
@@ -1505,10 +1518,14 @@ namespace TPMS_DTC
                 }
 
                 // 타임아웃 확인 및 Flow Control 재요청
-                if ((DateTime.Now - startTime).TotalMilliseconds > 500)
+                if ((DateTime.Now - startTime).TotalMilliseconds > 500 && message.DATA[1] != 0x7F)
                 {
-                    UpdateDisplay("Error: Flow Control 메시지를 기다리는 중 타임아웃 발생.");
+                    LogAdditionalDescription4("로그 UI에 Flow Control 메시지를 중 프리징 발생");
+                    LogScrollDown();
 
+                    // 메시지 박스로 사용자에게 초기화 확인
+                    MessageBox.Show("로그 UI에 Flow Control 메시지 업데이트 중 프리징 발생. 리셋 버튼 후 다시 송신해주세요.");
+                    
                     MultiframeTxStatus = false;
 
                     return false; // 강제 종료
@@ -1519,29 +1536,6 @@ namespace TPMS_DTC
 
             return flowControlReceived;
         }
-
-        /* ECU 측 flowcontrol 제어 불가로 주석처리
-        private int GetBlockSizeFromFlowControl()
-        {
-            // Flow Control 메시지의 Block Size 추출 (DATA[1] 사용)
-            return flowControlData[1];
-        }
-
-        private int GetStminFromFlowControl()
-        {
-            // Flow Control 메시지의 STmin 추출 (DATA[2] 사용)
-            int stmin = flowControlData[2];
-            if (stmin >= 0xF1 && stmin <= 0xF9)
-            {
-                // 0xF1 ~ 0xF9는 100μs 단위
-                return (stmin & 0x0F) * 100 / 1000; // ms 단위로 변환4074
-            }
-            else
-            {
-                // 기본은 ms 단위
-                return stmin;
-            }
-        }*/
 
         //===============================================================================================
         //   TX(Read)일떄 RX 데이터 파싱 관련 메서드
@@ -1925,7 +1919,8 @@ namespace TPMS_DTC
 
                     if (!string.IsNullOrEmpty(parsedData))
                     {
-                        LogAdditionalDTCDescription(parsedData);
+                        //LogAdditionalDTCDescription(parsedData);
+                        LogAdditionalDescription3(parsedData);
                     }
                 }
                 else if (description.Contains("Request Historic"))
@@ -1935,7 +1930,8 @@ namespace TPMS_DTC
 
                     if (!string.IsNullOrEmpty(parsedData))
                     {
-                        LogAdditionalDTCDescription(parsedData);
+                        //LogAdditionalDTCDescription(parsedData);
+                        LogAdditionalDescription3(parsedData);
                     }
                 }
             }
@@ -1984,45 +1980,6 @@ namespace TPMS_DTC
         //   LogList 업데이트 관련 메서드
         //===============================================================================================
 
-        /*private void UpdateDisplay(string logEntry)
-        {
-            if (LogListBox.InvokeRequired)
-            {
-                LogListBox.Invoke(new System.Action(() =>
-                {
-                    LogListBox.Items.Add(logEntry);
-
-                    // 자동 저장 호출
-                    LogListBox_ItemsChanged(null, null);
-
-                    // 표시 항목 수 제한 (예: 100개)
-                    if (LogListBox.Items.Count > 100)
-                    {
-                        LogListBox.Items.RemoveAt(0);
-                    }
-
-                    // 마지막 항목으로 스크롤
-                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
-                }));
-            }
-            else
-            {
-                LogListBox.Items.Add(logEntry);
-
-                // 자동 저장 호출
-                LogListBox_ItemsChanged(null, null);
-
-                // 표시 항목 수 제한 (예: 100개)
-                if (LogListBox.Items.Count > 100)
-                {
-                    LogListBox.Items.RemoveAt(0);
-                }
-
-                // 마지막 항목으로 스크롤
-                LogListBox.TopIndex = LogListBox.Items.Count - 1;
-            }
-        }*/
-
         private void UpdateDisplay(string logEntry)
         {
             // UI 스레드에서 실행되지 않는 경우 Invoke를 통해 UI 스레드에서 실행
@@ -2040,6 +1997,7 @@ namespace TPMS_DTC
             {
                 LogListBox.Items.RemoveAt(0); // 가장 오래된 항목 제거
             }
+
         }
 
         //Read Tx일때 Rx의 DTC ReadDescription 로그에 추가
@@ -2073,9 +2031,6 @@ namespace TPMS_DTC
                     {
                         LogListBox.Items.RemoveAt(0);
                     }
-
-                    // 마지막 항목으로 스크롤
-                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
                 }));
             }
             else
@@ -2094,9 +2049,6 @@ namespace TPMS_DTC
                 {
                     LogListBox.Items.RemoveAt(0);
                 }
-
-                // 마지막 항목으로 스크롤
-                LogListBox.TopIndex = LogListBox.Items.Count - 1;
             }
         }
 
@@ -2158,6 +2110,238 @@ namespace TPMS_DTC
             }
         }
 
+        ////Multiframe을 송신할때 TX, RX의 SuccessDescription 로그에 추가
+        private void LogAdditionalDescription2(string additionalDescription)
+        {
+            // 줄바꿈 기준 길이 설정 (예: 80자)
+            int maxLength = 136;
+
+            // 추가 설명을 줄바꿈하여 분할
+            List<string> splitDescription = new List<string>();
+            for (int i = 0; i < additionalDescription.Length; i += maxLength)
+            {
+                splitDescription.Add(additionalDescription.Substring(i, Math.Min(maxLength, additionalDescription.Length - i)));
+            }
+
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new System.Action(() =>
+                {
+                    // 분할된 각 줄을 로그에 추가
+                    foreach (string line in splitDescription)
+                    {
+                        LogListBox.Items.Add("Success | " + line);
+                    }
+
+                    // 자동 저장 호출
+                    LogListBox_ItemsChanged(null, null);
+
+                    // 표시 항목 수 제한 (예: 100개)
+                    while (LogListBox.Items.Count > 100)
+                    {
+                        LogListBox.Items.RemoveAt(0);
+                    }
+
+                    // 마지막 항목으로 스크롤
+                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
+                }));
+            }
+            else
+            {
+                // 분할된 각 줄을 로그에 추가
+                foreach (string line in splitDescription)
+                {
+                    LogListBox.Items.Add("Success | " + line);
+                }
+
+                // 자동 저장 호출
+                LogListBox_ItemsChanged(null, null);
+
+                // 표시 항목 수 제한 (예: 100개)
+                while (LogListBox.Items.Count > 100)
+                {
+                    LogListBox.Items.RemoveAt(0);
+                }
+
+                // 마지막 항목으로 스크롤
+                LogListBox.TopIndex = LogListBox.Items.Count - 1;
+            }
+        }
+
+        ////Read DTC의 Description 로그에 추가
+        private void LogAdditionalDescription3(string additionalDescription)
+        {
+            // 줄바꿈 기준 길이 설정 (예: 80자)
+            int maxLength = 136;
+
+            // 추가 설명을 줄바꿈하여 분할
+            List<string> splitDescription = new List<string>();
+            for (int i = 0; i < additionalDescription.Length; i += maxLength)
+            {
+                splitDescription.Add(additionalDescription.Substring(i, Math.Min(maxLength, additionalDescription.Length - i)));
+            }
+
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new System.Action(() =>
+                {
+                    // 분할된 각 줄을 로그에 추가
+                    foreach (string line in splitDescription)
+                    {
+                        LogListBox.Items.Add("DTC Info | " + line);
+                    }
+
+                    // 자동 저장 호출
+                    LogListBox_ItemsChanged(null, null);
+
+                    // 표시 항목 수 제한 (예: 100개)
+                    while (LogListBox.Items.Count > 100)
+                    {
+                        LogListBox.Items.RemoveAt(0);
+                    }
+
+                    // 마지막 항목으로 스크롤
+                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
+                }));
+            }
+            else
+            {
+                // 분할된 각 줄을 로그에 추가
+                foreach (string line in splitDescription)
+                {
+                    LogListBox.Items.Add("DTC Info | " + line);
+                }
+
+                // 자동 저장 호출
+                LogListBox_ItemsChanged(null, null);
+
+                // 표시 항목 수 제한 (예: 100개)
+                while (LogListBox.Items.Count > 100)
+                {
+                    LogListBox.Items.RemoveAt(0);
+                }
+
+                // 마지막 항목으로 스크롤
+                LogListBox.TopIndex = LogListBox.Items.Count - 1;
+            }
+        }
+
+        ////Read DTC의 Description 로그에 추가
+        private void LogAdditionalDescription4(string additionalDescription)
+        {
+            // 줄바꿈 기준 길이 설정 (예: 80자)
+            int maxLength = 136;
+
+            // 추가 설명을 줄바꿈하여 분할
+            List<string> splitDescription = new List<string>();
+            for (int i = 0; i < additionalDescription.Length; i += maxLength)
+            {
+                splitDescription.Add(additionalDescription.Substring(i, Math.Min(maxLength, additionalDescription.Length - i)));
+            }
+
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new System.Action(() =>
+                {
+                    // 분할된 각 줄을 로그에 추가
+                    foreach (string line in splitDescription)
+                    {
+                        LogListBox.Items.Add("Error | " + line);
+                    }
+
+                    // 자동 저장 호출
+                    LogListBox_ItemsChanged(null, null);
+
+                    // 표시 항목 수 제한 (예: 100개)
+                    while (LogListBox.Items.Count > 100)
+                    {
+                        LogListBox.Items.RemoveAt(0);
+                    }
+
+                    // 마지막 항목으로 스크롤
+                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
+                }));
+            }
+            else
+            {
+                // 분할된 각 줄을 로그에 추가
+                foreach (string line in splitDescription)
+                {
+                    LogListBox.Items.Add("Error | " + line);
+                }
+
+                // 자동 저장 호출
+                LogListBox_ItemsChanged(null, null);
+
+                // 표시 항목 수 제한 (예: 100개)
+                while (LogListBox.Items.Count > 100)
+                {
+                    LogListBox.Items.RemoveAt(0);
+                }
+
+                // 마지막 항목으로 스크롤
+                LogListBox.TopIndex = LogListBox.Items.Count - 1;
+            }
+        }
+
+        ////기본 커맨드 RX에 대한 Description 로그에 추가
+        private void LogAdditionalDescription5(string additionalDescription)
+        {
+            // 줄바꿈 기준 길이 설정 (예: 80자)
+            int maxLength = 136;
+
+            // 추가 설명을 줄바꿈하여 분할
+            List<string> splitDescription = new List<string>();
+            for (int i = 0; i < additionalDescription.Length; i += maxLength)
+            {
+                splitDescription.Add(additionalDescription.Substring(i, Math.Min(maxLength, additionalDescription.Length - i)));
+            }
+
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new System.Action(() =>
+                {
+                    // 분할된 각 줄을 로그에 추가
+                    foreach (string line in splitDescription)
+                    {
+                        LogListBox.Items.Add("");
+                    }
+
+                    // 자동 저장 호출
+                    LogListBox_ItemsChanged(null, null);
+
+                    // 표시 항목 수 제한 (예: 100개)
+                    while (LogListBox.Items.Count > 100)
+                    {
+                        LogListBox.Items.RemoveAt(0);
+                    }
+
+                    // 마지막 항목으로 스크롤
+                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
+                }));
+            }
+            else
+            {
+                // 분할된 각 줄을 로그에 추가
+                foreach (string line in splitDescription)
+                {
+                    LogListBox.Items.Add("");
+                }
+
+                // 자동 저장 호출
+                LogListBox_ItemsChanged(null, null);
+
+                // 표시 항목 수 제한 (예: 100개)
+                while (LogListBox.Items.Count > 100)
+                {
+                    LogListBox.Items.RemoveAt(0);
+                }
+
+                // 마지막 항목으로 스크롤
+                LogListBox.TopIndex = LogListBox.Items.Count - 1;
+            }
+        }
+
         //LogListBox에 Display되어있는 값들 지우기
         private void LogResetButton_Click(object sender, EventArgs e)
         {
@@ -2188,6 +2372,23 @@ namespace TPMS_DTC
             {
                 // 예외 발생 시 로그에 남길 수 있음 (선택 사항)
                 Console.WriteLine("LogListBox 자동 저장 중 오류 발생: " + ex.Message);
+            }
+        }
+
+        private void LogScrollDown()
+        {
+            if (LogListBox.InvokeRequired)
+            {
+                LogListBox.Invoke(new System.Action(() =>
+                {
+                    // 마지막 항목으로 스크롤
+                    LogListBox.TopIndex = LogListBox.Items.Count - 1;
+                }));
+            }
+            else
+            {
+                // 마지막 항목으로 스크롤
+                LogListBox.TopIndex = LogListBox.Items.Count - 1;
             }
         }
 
